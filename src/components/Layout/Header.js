@@ -7,12 +7,15 @@ const Header = ({ onOpenCart }) => {
     return (
         <>
             <header className={classes.header}>
-                <h1>ReactMeals</h1>
+                <h1>React Food Order App</h1>
                 <CartButton buttonClickHandler={onOpenCart} />
             </header>
-            <div className={classes['main-image']}>
-                <img src={mealsImage} alt='meals' />
+            <div className={classes.hero}>
+                <div className={classes['main-image']}>
+                    <img src={mealsImage} alt='meals' />
+                </div>
             </div>
+
         </>
     )
 }

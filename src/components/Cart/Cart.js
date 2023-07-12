@@ -1,11 +1,18 @@
 import classes from './Cart.module.css';
 import Modal from '../UI/Modal';
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import CartContext from '../../store/card-context';
 import CartItem from './CartItem';
+import Checkout from './Checkout';
+import axios from 'axios';
+const BASE_URL = 'https://food-order-app-4b3eb-default-rtdb.firebaseio.com/orders.json'
 
 
 const Cart = (props) => {
+    const [order, setOrder] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [submitOrder, setSubmitOrder] = useState(false);
     const cartContext = useContext(CartContext);
 
     const hasItems = cartContext.items.length > 0;
@@ -26,6 +33,26 @@ const Cart = (props) => {
         cartContext.removeItem(id)
     };
 
+    const orderButtonHandler = (e) => {
+        setOrder(true)
+    };
+
+    const submitOrderHandler = async (userData) => {
+        setLoading(true)
+        try {
+            await axios.post(BASE_URL, {
+                user: userData,
+                orderedItems: cartContext.items
+            })
+            setSubmitOrder(true)
+        } catch (err) {
+            setError(true)
+        }
+        setLoading(false)
+        cartContext.clearItems()
+
+    };
+
     const cartItems = cartContext.items.map((item) =>
         <CartItem
             key={item.id}
@@ -43,18 +70,54 @@ const Cart = (props) => {
         // and in the above addItemToCartHandler we can just do (see above line 20)
         />)
 
+    const modalActions =
+        <div className={classes.actions}>
+            <button onClick={props.onCloseCart} className={classes['button--alt']}>close</button>
+            {hasItems && <button onClick={orderButtonHandler} className={classes.button}>order</button>}
+        </div>
+
+
+    const cartModalContent =
+        <>
+            <ul className={classes['cart-items']}>{cartItems}</ul>
+            <div className={classes.total}>
+                <span>Total Amount</span>
+                <span>${cartContext.totalAmount.toFixed(2)}</span>
+            </div>
+            {order && <Checkout onConfirm={submitOrderHandler} onCancel={props.onCloseCart} />}
+            {!order && modalActions}
+        </>
+
+    const errorContent =
+        <div>
+            <h1>Sorry, there is something wrong on our end, please try later.. </h1>
+            <div className={classes.actions}>
+                <button onClick={props.onCloseCart} className={classes.button}>close</button>
+            </div>
+        </div>
+
+    const loadingContent =
+        <div>
+            <h1>Submitting your order...</h1>
+            <div className={classes.actions}>
+                <button onClick={props.onCloseCart} className={classes.button}>close</button>
+            </div>
+        </div>
+
+    const successContent =
+        <div>
+            <h1>Thank you for submitting your order!!</h1>
+            <div className={classes.actions}>
+                <button onClick={props.onCloseCart} className={classes.button}>close</button>
+            </div>
+        </div>
 
     return (
         <Modal onClick={props.onCloseCart}>
-            <ul className={classes['cart- items']}>{cartItems}</ul>
-            <div className={classes.total}>
-                <span>total amount</span>
-                <span>${cartContext.totalAmount.toFixed(2)}</span>
-            </div>
-            <div className={classes.actions}>
-                <button onClick={props.onCloseCart} className={classes['button--alt']}>close</button>
-                {hasItems && <button className={classes.button}>order</button>}
-            </div>
+            {!submitOrder && !loading && !error && cartModalContent}
+            {loading && loadingContent}
+            {error && errorContent}
+            {submitOrder && !error && !loading && successContent}
         </Modal>
     )
 };
